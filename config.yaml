@@ -1,0 +1,31 @@
+camera:
+  timeout_ms: 100
+  use_color: true
+
+board:
+  dictionary: DICT_4X4_50
+  markers_x: 4
+  markers_y: 4
+  marker_length_m: 0.04
+  marker_separation_m: 0.01
+  board_image_path: assets/aruco_gridboard.png
+  pixels_per_meter: 4000
+  margin_px: 80
+  axis_length_m: 0.05
+
+object:
+  type: box
+  size_m: [0.05, 0.03, 0.02]
+  # Simple color-based segmentation for a red object.
+  hsv_lower: [0, 120, 70]
+  hsv_upper: [10, 255, 255]
+  hsv_lower_2: [170, 120, 70]
+  hsv_upper_2: [180, 255, 255]
+  min_area_px: 300
+
+tracking:
+  position_alpha: 0.3
+
+mujoco:
+  xml_path: assets/scene.xml
+  body_name: tracked_object
