@@ -88,9 +88,13 @@ class ArucoBoardTracker:
         return vis, rvec, tvec, ids
 
 
-def rvec_tvec_to_transform(rvec: np.ndarray, tvec: np.ndarray) -> np.ndarray:
+def board_to_camera_transform(rvec: np.ndarray, tvec: np.ndarray) -> np.ndarray:
     rot, _ = cv2.Rodrigues(rvec)
     T = np.eye(4, dtype=np.float64)
     T[:3, :3] = rot
     T[:3, 3] = tvec.reshape(3)
     return T
+
+def camera_to_board_transform(rvec: np.ndarray, tvec: np.ndarray) -> np.ndarray:
+    T_board_camera = board_to_camera_transform(rvec, tvec)
+    return np.linalg.inv(T_board_camera)

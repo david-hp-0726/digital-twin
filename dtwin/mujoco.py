@@ -22,6 +22,7 @@ class MujocoObjectViewer:
         self.qpos_adr = self.model.jnt_qposadr[self.joint_id]
 
     def set_body_pose(self, pos_xyz: np.ndarray, quat_wxyz: np.ndarray) -> None:
+        # print(f"[mujoco] set_body_pose pos={pos_xyz}", flush=True)
         self.data.qpos[self.qpos_adr:self.qpos_adr + 3] = pos_xyz
         self.data.qpos[self.qpos_adr + 3:self.qpos_adr + 7] = quat_wxyz
         mujoco.mj_forward(self.model, self.data)

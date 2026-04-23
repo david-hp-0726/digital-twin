@@ -16,11 +16,11 @@ board:
 object:
   type: box
   size_m: [0.05, 0.03, 0.02]
-  # Simple color-based segmentation for a red object.
-  hsv_lower: [0, 120, 70]
-  hsv_upper: [10, 255, 255]
-  hsv_lower_2: [170, 120, 70]
-  hsv_upper_2: [180, 255, 255]
+  # orange object
+  hsv_lower: [5, 120, 120]
+  hsv_upper: [25, 255, 255]
+  hsv_lower_2: [5, 120, 120]
+  hsv_upper_2: [25, 255, 255]
   min_area_px: 300
 
 tracking:
@@ -29,3 +29,21 @@ tracking:
 mujoco:
   xml_path: assets/scene.xml
   body_name: tracked_object
+
+board:
+  dictionary: DICT_4X4_50
+  markers_x: 4
+  markers_y: 4
+  marker_length_m: 0.0345
+  marker_separation_m: 0.009
+  board_image_path: assets/aruco_gridboard.png
+  pixels_per_meter: 4000
+  margin_px: 80
+  axis_length_m: 0.05
+
+world:
+  board_to_mujoco_rotation:
+    - [1, 0, 0]
+    - [0, 1, 0]
+    - [0, 0, -1]
+  board_to_mujoco_translation_m: [0.0, 0.0, 0.0]

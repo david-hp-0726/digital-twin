@@ -1,17 +1,42 @@
 <mujoco model="object_tracker">
   <option timestep="0.01"/>
 
+  <asset>
+    <texture name="board_tex" type="2d" file="aruco_gridboard.png"/>
+    <material name="board_mat" texture="board_tex" texuniform="true"/>
+
+    <texture name="table_tex" type="2d" builtin="flat" rgb1="0.7 0.7 0.7" width="32" height="32"/>
+    <material name="table_mat" texture="table_tex"/>
+  </asset>
+
   <visual>
     <headlight diffuse="0.8 0.8 0.8" ambient="0.4 0.4 0.4" specular="0.1 0.1 0.1"/>
   </visual>
 
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1"/>
-    <geom name="table" type="box" pos="0 0 -0.02" size="0.4 0.4 0.02" rgba="0.7 0.7 0.7 1"/>
+
+    <!-- ArUco board: world origin is board center, board lies in z=0 plane -->
+    <geom
+      name="aruco_board"
+      type="plane"
+      pos="0 0 0.005"
+      size="0.082 0.082 0.005"
+      material="board_mat"
+      rgba="1 1 1 1"/>
+
+    <!-- Table underneath the board -->
+    <geom
+      name="table"
+      type="box"
+      pos="0 0 -0.02"
+      size="0.4 0.4 0.02"
+      material="table_mat"
+      rgba="1 1 1 1"/>
 
     <body name="tracked_object" pos="0 0 0.03">
       <freejoint/>
-      <geom name="tracked_object_geom" type="box" size="0.025 0.015 0.01" rgba="1 0 0 1"/>
+      <geom name="tracked_object_geom" type="box" size="0.025 0.015 0.01" rgba="1 0.5 0 1"/>
     </body>
   </worldbody>
 </mujoco>

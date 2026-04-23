@@ -30,7 +30,10 @@ class LowPassVec3:
         return self.value.copy()
 
 
-def segment_red_object(frame_bgr: np.ndarray, cfg: ColorSegConfig) -> Tuple[np.ndarray, Optional[Tuple[int, int, int, int]]]:
+def segment_object(
+    frame_bgr: np.ndarray,
+    cfg: ColorSegConfig,
+) -> Tuple[np.ndarray, Optional[Tuple[int, int, int, int]]]:
     hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
 
     mask1 = cv2.inRange(hsv, np.array(cfg.hsv_lower), np.array(cfg.hsv_upper))
@@ -54,49 +57,73 @@ def segment_red_object(frame_bgr: np.ndarray, cfg: ColorSegConfig) -> Tuple[np.n
     return mask, (x, y, w, h)
 
 
-def pixel_to_camera_ray(u: float, v: float, camera_matrix: np.ndarray) -> np.ndarray:
-    fx = camera_matrix[0, 0]
-    fy = camera_matrix[1, 1]
-    cx = camera_matrix[0, 2]
-    cy = camera_matrix[1, 2]
-
-    x = (u - cx) / fx
-    y = (v - cy) / fy
-    ray = np.array([x, y, 1.0], dtype=np.float64)
-    return ray / np.linalg.norm(ray)
+def transform_point(T: np.ndarray, p: np.ndarray) -> np.ndarray:
+    p_h = np.ones(4, dtype=np.float64)
+    p_h[:3] = p
+    return (T @ p_h)[:3]
 
 
-def intersect_ray_with_plane(ray_cam: np.ndarray, plane_z_in_board: float, T_camera_board: np.ndarray) -> Optional[np.ndarray]:
-    # We assume the object lies on the board plane z = plane_z_in_board in board/world coordinates.
-    T_board_camera = np.linalg.inv(T_camera_board)
+def deproject_pixel_to_camera(u: np.ndarray, v: np.ndarray, z: np.ndarray, camera_matrix: np.ndarray) -> np.ndarray:
+    fx = float(camera_matrix[0, 0])
+    fy = float(camera_matrix[1, 1])
+    cx = float(camera_matrix[0, 2])
+    cy = float(camera_matrix[1, 2])
 
-    cam_origin_board = T_board_camera[:3, 3]
-    ray_dir_board = T_board_camera[:3, :3] @ ray_cam
-
-    if abs(ray_dir_board[2]) < 1e-8:
-        return None
-
-    t = (plane_z_in_board - cam_origin_board[2]) / ray_dir_board[2]
-    if t <= 0:
-        return None
-
-    p_board = cam_origin_board + t * ray_dir_board
-    return p_board
+    x = (u - cx) * z / fx
+    y = (v - cy) * z / fy
+    return np.stack([x, y, z], axis=-1)
 
 
-def estimate_object_position_on_board(
-    bbox: Tuple[int, int, int, int],
+def estimate_object_position_from_depth(
+    mask: np.ndarray,
+    depth_m: np.ndarray,
     camera_matrix: np.ndarray,
-    T_camera_board: np.ndarray,
-    object_height_m: float,
+    T_camera_to_board: np.ndarray,
+    *,
+    min_valid_depth_m: float = 0.05,
+    max_valid_depth_m: float = 5.0,
+    sample_stride: int = 2,
 ) -> Optional[np.ndarray]:
-    x, y, w, h = bbox
-    u = x + 0.5 * w
-    v = y + 0.5 * h
+    """
+    Estimate a 3D object position from the segmented mask and aligned depth.
 
-    ray_cam = pixel_to_camera_ray(u, v, camera_matrix)
-    # Approximate object center as lying half-height above the board plane.
-    return intersect_ray_with_plane(ray_cam, plane_z_in_board=object_height_m / 2.0, T_camera_board=T_camera_board)
+    Returns the median 3D point of valid visible object pixels in board coordinates.
+    This is a visible-surface centroid proxy, not a true rigid-body center of mass.
+    """
+    if mask is None or depth_m is None:
+        return None
+
+    ys, xs = np.nonzero(mask > 0)
+    if xs.size == 0:
+        return None
+
+    if sample_stride > 1:
+        xs = xs[::sample_stride]
+        ys = ys[::sample_stride]
+
+    z = depth_m[ys, xs].astype(np.float64)
+    valid = np.isfinite(z) & (z >= min_valid_depth_m) & (z <= max_valid_depth_m)
+    print(
+        f"[depth-debug] mask_pixels={len(z)} "
+        f"finite={(np.isfinite(z)).sum()} "
+        f"in_range={valid.sum()} "
+        f"z_min={(np.nanmin(z) if np.isfinite(z).any() else 'nan')} "
+        f"z_max={(np.nanmax(z) if np.isfinite(z).any() else 'nan')}",
+        flush=True,
+    )
+    if not np.any(valid):
+        return None
+
+    xs = xs[valid].astype(np.float64)
+    ys = ys[valid].astype(np.float64)
+    z = z[valid]
+
+    p_cam = deproject_pixel_to_camera(xs, ys, z, camera_matrix)
+    ones = np.ones((p_cam.shape[0], 1), dtype=np.float64)
+    p_cam_h = np.concatenate([p_cam, ones], axis=1)
+    p_board = (T_camera_to_board @ p_cam_h.T).T[:, :3]
+
+    return np.median(p_board, axis=0)
 
 
 def identity_quat_wxyz() -> np.ndarray:
