@@ -54,7 +54,6 @@ def main() -> None:
     print("[run] constructing camera", flush=True)
     cam = GeminiCamera(timeout_ms=cfg["camera"]["timeout_ms"])
 
-    print("[run] starting camera", flush=True)
     cam.start()
     print("[run] camera started", flush=True)
 
@@ -122,21 +121,6 @@ def main() -> None:
         if bbox is not None:
             x, y, w, h = bbox
             cv2.rectangle(vis, (x, y), (x + w, y + h), (0, 255, 255), 2)
-        
-        if depth_m is not None:
-            x, y, w, h = bbox
-            roi = depth_m[y:y+h, x:x+w]
-            finite = np.isfinite(roi)
-            print(
-                f"[depth-roi] shape={roi.shape} "
-                f"finite={finite.sum()}/{roi.size} "
-                f"gt0={(roi > 0).sum()} "
-                f"min={(np.nanmin(roi) if finite.any() else 'nan')} "
-                f"max={(np.nanmax(roi) if finite.any() else 'nan')}",
-                flush=True,
-            )
-        else:
-            print("depth_m is None")
 
         if rvec is not None and tvec is not None and bbox is not None and depth_m is not None:
             T_camera_to_board = camera_to_board_transform(rvec, tvec)
@@ -150,7 +134,7 @@ def main() -> None:
                 max_valid_depth_m=5.0,
                 sample_stride=2,
             )
-            pos_board = pos_board - np.array([0.082, 0.082, 0.0], dtype=np.float64)
+            # pos_board = pos_board - np.array([0.082, 0.082, 0.0], dtype=np.float64)
 
             if pos_board is not None:
                 pos_mujoco = board_to_mujoco(pos_board, cfg)
