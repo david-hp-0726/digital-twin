@@ -73,6 +73,7 @@ class ArucoBoardTracker:
         if obj_points is None or img_points is None or len(obj_points) < 4:
             return vis, None, None, ids
 
+        obj_points = recenter_board_points(obj_points, self.cfg)
         ok, rvec, tvec = cv2.solvePnP(obj_points, img_points, camera_matrix, dist_coeffs)
         if not ok:
             return vis, None, None, ids
@@ -98,3 +99,22 @@ def board_to_camera_transform(rvec: np.ndarray, tvec: np.ndarray) -> np.ndarray:
 def camera_to_board_transform(rvec: np.ndarray, tvec: np.ndarray) -> np.ndarray:
     T_board_camera = board_to_camera_transform(rvec, tvec)
     return np.linalg.inv(T_board_camera)
+
+def recenter_board_points(obj_points: np.ndarray, cfg: BoardConfig) -> np.ndarray:
+    board_w = (
+        cfg.markers_x * cfg.marker_length_m
+        + (cfg.markers_x - 1) * cfg.marker_separation_m
+    )
+    board_h = (
+        cfg.markers_y * cfg.marker_length_m
+        + (cfg.markers_y - 1) * cfg.marker_separation_m
+    )
+
+    pts = obj_points.reshape(-1, 3).astype(np.float64)
+
+    # Move origin from board corner to board center
+    pts[:, 0] -= board_w / 2.0
+    pts[:, 1] -= board_h / 2.0
+
+
+    return pts.reshape(obj_points.shape)

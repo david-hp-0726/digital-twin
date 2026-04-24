@@ -17,10 +17,10 @@ object:
   type: box
   size_m: [0.05, 0.03, 0.02]
   # orange object
-  hsv_lower: [5, 120, 120]
-  hsv_upper: [25, 255, 255]
-  hsv_lower_2: [5, 120, 120]
-  hsv_upper_2: [25, 255, 255]
+  hsv_lower: [8, 170, 120]
+  hsv_upper: [22, 255, 255]
+  hsv_lower_2: [8, 170, 120]
+  hsv_upper_2: [22, 255, 255]
   min_area_px: 300
 
 tracking:
@@ -46,4 +46,4 @@ world:
     - [1, 0, 0]
     - [0, 1, 0]
     - [0, 0, -1]
-  board_to_mujoco_translation_m: [-0.082, -0.082, 0.0]
+  board_to_mujoco_translation_m: [0, 0, 0.0]

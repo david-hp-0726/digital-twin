@@ -103,14 +103,6 @@ def estimate_object_position_from_depth(
 
     z = depth_m[ys, xs].astype(np.float64)
     valid = np.isfinite(z) & (z >= min_valid_depth_m) & (z <= max_valid_depth_m)
-    print(
-        f"[depth-debug] mask_pixels={len(z)} "
-        f"finite={(np.isfinite(z)).sum()} "
-        f"in_range={valid.sum()} "
-        f"z_min={(np.nanmin(z) if np.isfinite(z).any() else 'nan')} "
-        f"z_max={(np.nanmax(z) if np.isfinite(z).any() else 'nan')}",
-        flush=True,
-    )
     if not np.any(valid):
         return None
 

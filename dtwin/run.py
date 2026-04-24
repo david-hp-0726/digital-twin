@@ -17,6 +17,7 @@ from dtwin.pose import (
     identity_quat_wxyz,
     segment_object,
 )
+from dtwin.scene import generate_scene_xml
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
@@ -30,7 +31,10 @@ def load_config():
 def board_to_mujoco(pos_board: np.ndarray, cfg) -> np.ndarray:
     R = np.array(cfg["world"]["board_to_mujoco_rotation"], dtype=np.float64)
     t = np.array(cfg["world"]["board_to_mujoco_translation_m"], dtype=np.float64)
-    return R @ pos_board + t
+    x = R @ pos_board + t
+    min_object_z = cfg["object"]["size_m"][2] / 2
+    x[2] = max(min_object_z, x[2])
+    return x
 
 
 def depth_to_vis(depth_m: np.ndarray) -> np.ndarray:
@@ -68,14 +72,6 @@ def main() -> None:
             axis_length_m=cfg["board"]["axis_length_m"],
         )
     )
-    board_w = (
-        cfg["board"]["markers_x"] * cfg["board"]["marker_length_m"]
-        + (cfg["board"]["markers_x"] - 1) * cfg["board"]["marker_separation_m"]
-    )
-    board_h = (
-        cfg["board"]["markers_y"] * cfg["board"]["marker_length_m"]
-        + (cfg["board"]["markers_y"] - 1) * cfg["board"]["marker_separation_m"]
-    )
 
     seg_cfg = ColorSegConfig(
         hsv_lower=tuple(cfg["object"]["hsv_lower"]),
@@ -88,8 +84,10 @@ def main() -> None:
     position_filter = LowPassVec3(alpha=cfg["tracking"]["position_alpha"])
 
     print("[run] constructing mujoco viewer", flush=True)
+    scene_path = generate_scene_xml(cfg, ROOT / "generated_scene.xml")
+
     viewer = MujocoObjectViewer(
-        xml_path=str(ROOT / cfg["mujoco"]["xml_path"]),
+        xml_path=str(scene_path),
         body_name=cfg["mujoco"]["body_name"],
     )
     print("[run] mujoco viewer ready", flush=True)
