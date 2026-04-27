@@ -9,7 +9,7 @@ import yaml
 
 from dtwin.board import ArucoBoardTracker, BoardConfig, camera_to_board_transform
 from dtwin.camera import GeminiCamera
-from dtwin.mujoco import MujocoObjectViewer
+from dtwin.mujoco_viewer import MujocoObjectViewer
 from dtwin.pose import (
     ColorSegConfig,
     LowPassVec3,
@@ -23,7 +23,6 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 def load_config():
-    print("[run] loading config", flush=True)
     with open(ROOT / "config.yaml", "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
@@ -55,13 +54,10 @@ def depth_to_vis(depth_m: np.ndarray) -> np.ndarray:
 def main() -> None:
     cfg = load_config()
 
-    print("[run] constructing camera", flush=True)
     cam = GeminiCamera(timeout_ms=cfg["camera"]["timeout_ms"])
 
     cam.start()
-    print("[run] camera started", flush=True)
 
-    print("[run] constructing board tracker", flush=True)
     board_tracker = ArucoBoardTracker(
         BoardConfig(
             dictionary=cfg["board"]["dictionary"],
@@ -83,14 +79,12 @@ def main() -> None:
 
     position_filter = LowPassVec3(alpha=cfg["tracking"]["position_alpha"])
 
-    print("[run] constructing mujoco viewer", flush=True)
     scene_path = generate_scene_xml(cfg, ROOT / "generated_scene.xml")
 
     viewer = MujocoObjectViewer(
         xml_path=str(scene_path),
         body_name=cfg["mujoco"]["body_name"],
     )
-    print("[run] mujoco viewer ready", flush=True)
 
     obj_size = np.array(cfg["object"]["size_m"], dtype=np.float64)
     # Treat size_m[2] as half-height if that is how your MuJoCo geom is defined.
